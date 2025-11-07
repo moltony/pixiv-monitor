@@ -2,3 +2,4 @@ feedgen
 watchdog
 requests
 pixivpy3
+dotenv
