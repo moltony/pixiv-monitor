@@ -67,7 +67,10 @@ def send_notification(message, link, r18_tag=""):
                 logging.getLogger().warn(f"Unable to send dbus notification: {exc}; trying notify-send instead")
 
         # fallback in case we don't have dbus or it fail
-        subprocess.run(["notify-send", "-i", "dialog-information", f"{title_prefix}pixiv-monitor alert!", message, "-t", "0"])
+        try:
+            subprocess.run(["notify-send", "-i", "dialog-information", f"{title_prefix}pixiv-monitor alert!", message, "-t", "0"])
+        except Exception as exc:
+            logging.getLogger().warn(f"Unable to send notification using ntfy: {exc}")
     elif sys.platform.startswith("win"):
         if winotify:
             toast = winotify.Notification(app_id="pixiv-monitor", title=f"{title_prefix}pixiv-monitor alert!", msg=message)
