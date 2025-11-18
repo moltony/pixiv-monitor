@@ -12,6 +12,7 @@ import notify
 import random
 import sys
 from tokenswitcher import TokenSwitcher
+from hook import Hook
 
 def get_json_illusts(api, artist_id, token_switcher):
     while True:
@@ -41,6 +42,7 @@ class Monitor:
     @staticmethod
     def from_json(json_monitor, config, api, seen, token_switcher, hooks):
         monitor_token_switcher = None
+        monitor_hooks = hooks
         if len(json_monitor.get("accounts", [])) == 0:
             monitor_token_switcher = token_switcher
         else:
@@ -48,7 +50,11 @@ class Monitor:
             tokens = [token_switcher.tokens[i] for i in accounts]
             monitor_token_switcher = TokenSwitcher(len(accounts), False)
             monitor_token_switcher.tokens = tokens
-        return Monitor(json_monitor.get("check_interval", 30), json_monitor["artist_ids"], config, api, seen, monitor_token_switcher, hooks, json_monitor.get("num_threads", 30))
+        
+        if "hooks" in json_monitor:
+            monitor_hooks = [Hook(chook) for chook in json_monitor["hooks"]]
+
+        return Monitor(json_monitor.get("check_interval", 30), json_monitor["artist_ids"], config, api, seen, monitor_token_switcher, monitor_hooks, json_monitor.get("num_threads", 30))
 
     def run(self):
         threading.Thread(target=self.loop, daemon=True).start()

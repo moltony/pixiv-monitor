@@ -107,10 +107,6 @@ Install `winotify`:
 pip install winotify
 ```
 
-notifications will work now
-
-and yeah it only works on windows 10+ but lowkey you shouldn't be using anything older if ur on windows
-
 ## Command-line arugments
 
 * `--list-artists` List currently configured artists
