@@ -37,7 +37,7 @@ class TokenSwitcher:
         self.tokens = []
         if load_tokens:
             for i in range(self.num_accounts):
-                self.tokens.append(ApiToken(os.getenv(f"ACCESS_TOKEN{i}"), os.getenv(f"REFRESH_TOKEN{i}")))
+                self.tokens.append(ApiToken("nil", os.getenv(f"REFRESH_TOKEN{i}")))
         self.current_token = 0
         self.lock = threading.Lock()
         self.last_switch_time = 0
