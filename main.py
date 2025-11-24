@@ -34,7 +34,7 @@ from hook import Hook
 from seen import SeenIllustrations
 import utility
 from monitor import Monitor
-from loginit import init_logging
+from loginit import init_logging, string_to_log_level
 from output import Output
 
 def list_artists(config, api, token_switcher):
@@ -67,7 +67,6 @@ def main():
     try:
         args = parse_cli_args()
         config = settings.get_config()
-        init_logging(config, args.debug_log)
         if not settings.check_config(config):
             sys.exit(1)
         hooks = load_hooks(config)
@@ -76,6 +75,9 @@ def main():
         check_interval = config["check_interval"]
 
         dotenv.load_dotenv()
+
+        output = Output(args.basic)
+        init_logging(config, args.debug_log, output)
 
         if sys.platform.startswith("win"):
             try:
@@ -94,16 +96,14 @@ def main():
             list_artists(config, api, token_switcher)
             sys.exit(0)
 
-        output = Output(args.basic)
-
         if "monitors" in config:
             monitors = []
             for monitor in config["monitors"]:
                 monitors.append(Monitor.from_json(monitor, config, api, seen, token_switcher, hooks, output))
-            for monitor in monitors:
-                monitor.run()
+            for index, monitor in enumerate(monitors):
+                monitor.run(index)
         else:
-            Monitor(check_interval, config["artist_ids"], config, api, seen, token_switcher, hooks, output, config.get("num_threads", 3)).run()
+            Monitor(check_interval, config["artist_ids"], config, api, seen, token_switcher, hooks, output, config.get("num_threads", 3), 0).run()
         
         while True:
             time.sleep(1)

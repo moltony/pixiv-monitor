@@ -30,10 +30,11 @@ def bound_addstr(window, string, color_pair = -1):
         x += max(wcwidth.wcwidth(ch), 1)
     window.move(y, x)
 
-
-class Output:
+class Output(logging.Handler):
     def __init__(self, basic):
+        super().__init__()
         self.basic = basic
+        self.monitor_status = {}
         self.initialize()
 
     def initialize(self):
@@ -96,65 +97,102 @@ class Output:
             curses.nocbreak()
             curses.endwin()
 
+    def print_illust_basic(self, illust, unescape_caption, multiline_caption, newline):
+        caption_string = f"Caption: \033[0;36m{newline}{multiline_caption}\033[0m\n" if len(illust.caption.strip()) != 0 else ""
+        ai_string = "" if not illust.is_ai else "\033[0;31m[!] AI-generated [!]\033[0m\n"
+
+        page_count_string = "" if illust.page_count == 0 else f" \033[0;33m({illust.page_count} pages)\033[0m"
+        sensitive_string = "" if not illust.is_sensitive else f" \033[0;35m(sensitive content)\033[0m"
+
+        print(
+            f"[{utility.hrdatetime()}] \033[0;32mFound new illustration:\033[0m\n"
+            f"\033]8;;{illust.pixiv_link()}\033\\pixiv #{illust.iden}\033]8;;\033\\{page_count_string}{sensitive_string}\n"
+            f"{ai_string}"
+            f"Title: \033[0;36m{illust.title}\033[0m\n"
+            f"{caption_string}"
+            f"Artist: \033[0;36m\033]8;;{illust.user.pixiv_link()}\033\\{illust.user.name}\033]8;;\033\\\033[0m \033]8;;{illust.user.pixiv_stacc_link()}\033\\(@{illust.user.account})\033]8;;\033\\\n"
+            f"Tags: {illust.get_tag_string()}\n"
+        )
+
+    def print_illust_curses(self, illust, unescape_caption, multiline_caption, newline):
+        try:
+            # TODO Figure out a way to put links
+            # Curses has built-in mouse support (if the terminal supports it)
+            # so maybe that can be used. idk.
+            # Low priority because I don't really click the links anymore. But
+            # it'd be nice.
+
+            bound_addstr(self.illust_window, f"[{utility.hrdatetime()}] ")
+            bound_addstr(self.illust_window, f"Found new illustration:\n", curses.color_pair(COLOR_PAIR_GREEN))
+            bound_addstr(self.illust_window, f"pixiv #{illust.iden}")
+            if illust.page_count != 0:
+                bound_addstr(self.illust_window, f" ({illust.page_count} pages)", curses.color_pair(COLOR_PAIR_YELLOW))
+            if illust.is_sensitive:
+                bound_addstr(self.illust_window, f" (sensitive content)", curses.color_pair(COLOR_PAIR_PURPLE))
+            bound_addstr(self.illust_window, "\n")
+            if illust.is_ai:
+                bound_addstr(self.illust_window, "[!] AI-generated [!]\n", curses.color_pair(COLOR_PAIR_RED))
+            bound_addstr(self.illust_window, "Title: ")
+            bound_addstr(self.illust_window, illust.title, curses.color_pair(COLOR_PAIR_BLUE))
+            bound_addstr(self.illust_window, f"\nCaption: {newline}")
+            bound_addstr(self.illust_window, f"{multiline_caption}\n", curses.color_pair(COLOR_PAIR_BLUE))
+            bound_addstr(self.illust_window, "Artist: ")
+            bound_addstr(self.illust_window, illust.user.name, curses.color_pair(COLOR_PAIR_BLUE))
+            bound_addstr(self.illust_window, f" (@{illust.user.account})\nTags: ")
+            last_tag_index = len(illust.tags) - 1
+            
+            # Does what str(tag) does, but adjusted for curses output.
+            for i, tag in enumerate(illust.tags):
+                if tag.translated_name is None:
+                    if tag.name == "R-18" or tag.name == "R-18G":
+                        bound_addstr(self.illust_window, tag.name, curses.color_pair(COLOR_PAIR_RED))
+                    else:
+                        bound_addstr(self.illust_window, tag.name, curses.color_pair(COLOR_PAIR_BLUE))
+                else:
+                    bound_addstr(self.illust_window, f"{tag.name} / {tag.translated_name}", curses.color_pair(COLOR_PAIR_BLUE))
+                if i != last_tag_index:
+                    bound_addstr(self.illust_window, ", ")
+            bound_addstr(self.illust_window, "\n\n")
+
+            draw_window_box(self.illust_window)
+            self.illust_window.refresh()
+        except Exception as exc:
+            logging.getLogger().error(f"Error when printing illustration: %s", exc)
+
     def print_illust(self, illust):
         unescape_caption = html.unescape(illust.caption)
         multiline_caption = unescape_caption.replace("<br />", "\n")
         newline = "\n" if multiline_caption != unescape_caption else ""
 
         if self.basic:
-            caption_string = f"Caption: \033[0;36m{newline}{multiline_caption}\033[0m\n" if len(illust.caption.strip()) != 0 else ""
-            ai_string = "" if not illust.is_ai else "\033[0;31m[!] AI-generated [!]\033[0m\n"
-
-            page_count_string = "" if illust.page_count == 0 else f" \033[0;33m({illust.page_count} pages)\033[0m"
-            sensitive_string = "" if not illust.is_sensitive else f" \033[0;35m(sensitive content)\033[0m"
-
-            print(
-                f"[{utility.hrdatetime()}] \033[0;32mFound new illustration:\033[0m\n"
-                f"\033]8;;{illust.pixiv_link()}\033\\pixiv #{illust.iden}\033]8;;\033\\{page_count_string}{sensitive_string}\n"
-                f"{ai_string}"
-                f"Title: \033[0;36m{illust.title}\033[0m\n"
-                f"{caption_string}"
-                f"Artist: \033[0;36m\033]8;;{illust.user.pixiv_link()}\033\\{illust.user.name}\033]8;;\033\\\033[0m \033]8;;{illust.user.pixiv_stacc_link()}\033\\(@{illust.user.account})\033]8;;\033\\\n"
-                f"Tags: {illust.get_tag_string()}\n"
-            )
+            self.print_illust_basic(illust, unescape_caption, multiline_caption, newline)
         else:
-            try:
-                # TODO Figure out a way to put links
-                # Curses has built-in mouse support (if the terminal supports it)
-                # so maybe that can be used. idk.
-                # Low priority because I don't really click the links anymore. But
-                # it'd be nice.
+            self.print_illust_curses(illust, unescape_caption, multiline_caption, newline)
 
-                bound_addstr(self.illust_window, f"[{utility.hrdatetime()}] ")
-                bound_addstr(self.illust_window, f"Found new illustration:\n", curses.color_pair(COLOR_PAIR_GREEN))
-                bound_addstr(self.illust_window, f"pixiv #{illust.iden}")
-                if illust.page_count != 0:
-                    bound_addstr(self.illust_window, f" ({illust.page_count} pages)", curses.color_pair(COLOR_PAIR_YELLOW))
-                if illust.is_sensitive:
-                    bound_addstr(self.illust_window, f" (sensitive content)", curses.color_pair(COLOR_PAIR_PURPLE))
-                bound_addstr(self.illust_window, "\n")
-                if illust.is_ai:
-                    bound_addstr(self.illust_window, "[!] AI-generated [!]\n", curses.color_pair(COLOR_PAIR_RED))
-                bound_addstr(self.illust_window, "Title: ")
-                bound_addstr(self.illust_window, illust.title, curses.color_pair(COLOR_PAIR_BLUE))
-                bound_addstr(self.illust_window, f"\nCaption: {newline}")
-                bound_addstr(self.illust_window, f"{multiline_caption}\n", curses.color_pair(COLOR_PAIR_BLUE))
-                bound_addstr(self.illust_window, "Artist: ")
-                bound_addstr(self.illust_window, illust.user.name, curses.color_pair(COLOR_PAIR_BLUE))
-                bound_addstr(self.illust_window, f" (@{illust.user.account})\nTags: ")
-                last_tag_index = len(illust.tags) - 1
-                for i, tag in enumerate(illust.tags):
-                    if tag.translated_name is None:
-                        if tag.name == "R-18" or tag.name == "R-18G":
-                            bound_addstr(self.illust_window, tag.name, curses.color_pair(COLOR_PAIR_RED))
-                        else:
-                            bound_addstr(self.illust_window, tag.name, curses.color_pair(COLOR_PAIR_BLUE))
-                    else:
-                        bound_addstr(self.illust_window, f"{tag.name} / {tag.translated_name}", curses.color_pair(COLOR_PAIR_BLUE))
-                    if i != last_tag_index:
-                        bound_addstr(self.illust_window, ", ")
-                bound_addstr(self.illust_window, "\n\n")
+    def update_status(self, monitor_index, left, total):
+        if self.basic:
+            return # Status window is not available with basic output
 
-                self.illust_window.refresh()
-            except Exception as exc:
-                logging.getLogger().error(f"Error when printing illustration: %s", exc)
+        self.monitor_status[monitor_index] = left, total
+        self.status_window.clear()
+        self.status_window.move(1, 1)
+
+        bound_addstr(self.status_window, "pixiv-monitor\n")
+        for index in self.monitor_status:
+            monitor_left = self.monitor_status[index][0]
+            monitor_total = self.monitor_status[index][1]
+            bound_addstr(self.status_window, f"Monitor #{index + 1}: ")
+            bound_addstr(self.status_window, f"{monitor_left}/{monitor_total} pending\n", curses.color_pair(COLOR_PAIR_BLUE))
+
+        self.status_window.refresh()
+
+    def emit(self, record):
+        if self.basic:
+            return # Outputting to file already covered by logger's file handler
+
+        try:
+            message = self.format(record)
+            bound_addstr(self.log_window, f"{message}\n")
+            self.log_window.refresh()
+        except Exception:
+            self.handleError(record)

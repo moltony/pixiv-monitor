@@ -14,6 +14,9 @@ It supports RSS and sending notifications using ntfy.
 If you're on Windows, it's recommended to run the script in a terminal that supports ANSI escape sequences,
 such as Windows Terminal.
 
+Also if you're on Windows and you plan to use the curses-based UI, make sure to install `windows-curses`:
+`pip install windows-curses`
+
 Before running the script (`main.py`), you'll need to configure it as described below.
 
 ## Configuring

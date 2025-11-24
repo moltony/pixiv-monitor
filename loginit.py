@@ -5,7 +5,22 @@ import sys
 import logging
 import logging.handlers
 
-def init_logging(config, debug_log):
+def string_to_log_level(string_level):
+    match string_level:
+        case "debug":
+            return logging.DEBUG
+        case "info":
+            return logging.INFO
+        case "warning":
+            return logging.WARNING
+        case "error":
+            return logging.ERROR
+        case "critical":
+            return logging.CRITICAL
+        case _:
+            return logging.INFO # default
+
+def init_logging(config, debug_log, output):
     log_config = config.get("log", settings.DEFAULT_LOG_CONFIG)
     pathlib.Path(log_config["directory"]).mkdir(parents=True, exist_ok=True)
 
@@ -14,17 +29,8 @@ def init_logging(config, debug_log):
     if debug_log:
         log_level = logging.DEBUG
     else:
-        match string_level:
-            case "debug":
-                log_level = logging.DEBUG
-            case "info":
-                log_level = logging.INFO
-            case "warning":
-                log_level = logging.WARNING
-            case "error":
-                log_level = logging.ERROR
-            case "critical":
-                log_level = logging.CRITICAL
+        log_level = string_to_log_level(string_level)
+    output.level = log_level
 
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
@@ -42,6 +48,7 @@ def init_logging(config, debug_log):
     file_handler.setFormatter(formatter)
     
     logger.addHandler(file_handler)
+    logger.addHandler(output)
 
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)

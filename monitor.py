@@ -57,10 +57,10 @@ class Monitor:
 
         return Monitor(json_monitor.get("check_interval", 30), json_monitor["artist_ids"], config, api, seen, monitor_token_switcher, monitor_hooks, output, json_monitor.get("num_threads", 30))
 
-    def run(self):
-        threading.Thread(target=self.loop, daemon=True).start()
+    def run(self, index):
+        threading.Thread(target=self.loop, daemon=True, args=(index,)).start()
 
-    def loop(self):
+    def loop(self, index):
         artist_queue = queue.Queue()
 
         threads = []
@@ -75,6 +75,7 @@ class Monitor:
         def progress_worker(artist_queue, max):
             while not stop_event.is_set():
                 print(f"\033]0;pixiv-monitor: {artist_queue.qsize()}/{max} left\007", end="")
+                self.output.update_status(index, artist_queue.qsize(), max)
                 sys.stdout.flush()
                 time.sleep(2)
 
