@@ -6,9 +6,6 @@ class PixivUser:
         self.name = name
         self.account = account
  
-    def __str__(self):
-        return f"\033[0;36m\033]8;;{self.pixiv_link()}\033\\{self.name}\033]8;;\033\\\033[0m \033]8;;{self.pixiv_stacc_link()}\033\\(@{self.account})\033]8;;\033\\"
-    
     @staticmethod
     def from_json(json_user):
         return PixivUser(json_user["id"], json_user["name"], json_user["account"])
@@ -61,25 +58,6 @@ class PixivIllustration:
         # for log:
         self.create_date = create_date
     
-    def __str__(self):
-        unescape_caption = html.unescape(self.caption)
-        multiline_caption = unescape_caption.replace("<br />", "\n")
-        newline = "\n" if multiline_caption != unescape_caption else ""
-        caption_string = f"Caption: \033[0;36m{newline}{multiline_caption}\033[0m\n" if len(self.caption.strip()) != 0 else ""
-        ai_string = "" if not self.is_ai else "\033[0;31m[!] AI-generated [!]\033[0m\n"
-
-        page_count_string = "" if self.page_count == 0 else f" \033[0;33m({self.page_count} pages)\033[0m"
-        sensitive_string = "" if not self.is_sensitive else f" \033[0;35m(sensitive content)\033[0m"
-
-        return (
-            f"\033]8;;{self.pixiv_link()}\033\\pixiv #{self.iden}\033]8;;\033\\{page_count_string}{sensitive_string}\n"
-            f"{ai_string}"
-            f"Title: \033[0;36m{self.title}\033[0m\n"
-            f"{caption_string}"
-            f"Artist: {str(self.user)}\n"
-            f"Tags: {self.get_tag_string()}"
-        )
-
     def get_tag_string(self, use_color=True):
         return ", ".join(tag.__str__(use_color) for tag in self.tags)
 

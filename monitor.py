@@ -27,7 +27,7 @@ def get_json_illusts(api, artist_id, token_switcher):
                 continue
 
 class Monitor:
-    def __init__(self, check_interval, artist_ids, config, api, seen, token_switcher, hooks, num_threads):
+    def __init__(self, check_interval, artist_ids, config, api, seen, token_switcher, hooks, output, num_threads):
         self.check_interval = check_interval
         self.artist_ids = artist_ids
         self.config = config
@@ -35,12 +35,13 @@ class Monitor:
         self.seen = seen
         self.token_switcher = token_switcher
         self.hooks = hooks
+        self.output = output
         self.num_threads = num_threads
 
         logging.getLogger().debug("Created monitor with %d artist IDs, %d threads, %d tokens", len(artist_ids), num_threads, len(token_switcher.tokens))
 
     @staticmethod
-    def from_json(json_monitor, config, api, seen, token_switcher, hooks):
+    def from_json(json_monitor, config, api, seen, token_switcher, hooks, output):
         monitor_token_switcher = None
         monitor_hooks = hooks
         if len(json_monitor.get("accounts", [])) == 0:
@@ -54,7 +55,7 @@ class Monitor:
         if "hooks" in json_monitor:
             monitor_hooks = [Hook(chook) for chook in json_monitor["hooks"]]
 
-        return Monitor(json_monitor.get("check_interval", 30), json_monitor["artist_ids"], config, api, seen, monitor_token_switcher, monitor_hooks, json_monitor.get("num_threads", 30))
+        return Monitor(json_monitor.get("check_interval", 30), json_monitor["artist_ids"], config, api, seen, monitor_token_switcher, monitor_hooks, output, json_monitor.get("num_threads", 30))
 
     def run(self):
         threading.Thread(target=self.loop, daemon=True).start()
@@ -113,7 +114,7 @@ class Monitor:
                             first_illust = illust
                         self.seen.add_illust(illust.iden)
 
-                        print(f"[{utility.hrdatetime()}] \033[0;32mFound new illustration:\033[0m\n{str(illust)}\n")
+                        self.output.print_illust(illust)
 
                         page_count_string = "" if illust.page_count == 0 else f" ({illust.page_count} pages)"
                         log_message = f"New illustration: pixiv #{illust.iden}{page_count_string} '{illust.title}' by {illust.user.name} (@{illust.user.account}). Tags: {illust.get_tag_string(False)}"

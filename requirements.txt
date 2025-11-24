@@ -3,3 +3,4 @@ watchdog
 requests
 pixivpy3
 dotenv
+wcwidth
