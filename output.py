@@ -150,7 +150,6 @@ class Output(logging.Handler):
                     bound_addstr(self.illust_window, ", ")
             bound_addstr(self.illust_window, "\n\n")
 
-            draw_window_box(self.illust_window)
             self.illust_window.refresh()
         except Exception as exc:
             logging.getLogger().error(f"Error when printing illustration: %s", exc)
