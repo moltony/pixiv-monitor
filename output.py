@@ -59,10 +59,6 @@ class Output(logging.Handler):
         self.status_window = curses.newwin(right_top_height, right_width, 0, left_width)
         self.log_window = curses.newwin(right_bottom_height, right_width, right_top_height, left_width)
 
-        self.illust_window.box()
-        self.status_window.box()
-        self.log_window.box()
-
         self.illust_window.scrollok(True)
         self.log_window.scrollok(True)
 
