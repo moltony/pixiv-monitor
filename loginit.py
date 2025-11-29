@@ -46,6 +46,7 @@ def init_logging(config, debug_log, output):
         logger.addHandler(console_handler)
 
     file_handler.setFormatter(formatter)
+    output.setFormatter(formatter)
     
     logger.addHandler(file_handler)
     logger.addHandler(output)
