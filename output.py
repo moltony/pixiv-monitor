@@ -47,6 +47,8 @@ class Output(logging.Handler):
             ("weight", 1, self.right_pane)
         ])
 
+        logging.getLogger("urwid").setLevel(logging.INFO)
+
         self.advanced_initialized = True
 
         self.loop = urwid.MainLoop(self.layout, self.PALETTE)
