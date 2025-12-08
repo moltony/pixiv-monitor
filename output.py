@@ -51,8 +51,13 @@ class Output(logging.Handler):
 
         self.advanced_initialized = True
 
-        self.loop = urwid.MainLoop(self.layout, self.PALETTE)
+        self.loop = urwid.MainLoop(self.layout, self.PALETTE, unhandled_input=self.handle_input)
         self.loop.run()
+
+    def handle_input(self, key):
+        if key in ("ctrl c", "q"):
+            raise urwid.ExitMainLoop()
+        return key
 
     def print_illust_basic(self, illust, unescape_caption, multiline_caption, newline):
         caption_string = f"Caption: \033[0;36m{newline}{multiline_caption}\033[0m\n" if len(illust.caption.strip()) != 0 else ""
