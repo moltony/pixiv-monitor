@@ -96,6 +96,8 @@ def main():
             list_artists(config, api, token_switcher)
             sys.exit(0)
 
+        output.initialize()
+
         if "monitors" in config:
             monitors = []
             for monitor in config["monitors"]:
@@ -105,7 +107,7 @@ def main():
         else:
             Monitor(check_interval, config["artist_ids"], config, api, seen, token_switcher, hooks, output, config.get("num_threads", 3), 0).run()
 
-        output.initialize() # do this at the end because it takes over if using advanced ui
+        output.run_loop()
         
         while True:
             time.sleep(1)

@@ -49,10 +49,12 @@ class Output(logging.Handler):
 
         logging.getLogger("urwid").setLevel(logging.INFO)
 
-        self.advanced_initialized = True
-
         self.loop = urwid.MainLoop(self.layout, self.PALETTE, unhandled_input=self.handle_input)
-        self.loop.run()
+        self.advanced_initialized = True
+    
+    def run_loop(self):
+        if not self.basic:
+            self.loop.run()
 
     def handle_input(self, key):
         if key in ("ctrl c", "q"):
@@ -120,13 +122,13 @@ class Output(logging.Handler):
         multiline_caption = unescape_caption.replace("<br />", "\n")
         newline = "\n" if multiline_caption != unescape_caption else ""
 
-        if self.basic:
+        if self.basic or not self.advanced_initialized:
             self.print_illust_basic(illust, unescape_caption, multiline_caption, newline)
         else:
             self.print_illust_advanced(illust, unescape_caption, multiline_caption, newline)
 
     def update_status(self, monitor_index, left, total):
-        if self.basic:
+        if self.basic or not self.advanced_initialized:
             return # Status window is not available with basic output
 
         self.monitor_status[monitor_index] = (left, total)
