@@ -10,15 +10,12 @@ class Output(logging.Handler):
         super().__init__()
         self.basic = basic
         self.monitor_status = {}
+        self.advanced_initialized = False
 
     def initialize(self):
         # Basic mode means we can't have windows.
         if self.basic:
             return
-
-        self.illust_queue = queue.Queue()
-        self.log_queue = queue.Queue()
-        self.status_queue = queue.Queue()
 
         self.PALETTE = [
             ('green', 'dark green', ''),
@@ -34,7 +31,7 @@ class Output(logging.Handler):
         self.illust_list_box = urwid.ListBox(self.illust_list_walker)
 
         self.status_text = urwid.Text("pixiv-monitor\n", align="left")
-        self.status_box = urwid.LineBox(self.status_text, title="status")
+        self.status_box = urwid.LineBox(self.status_text, title="pixiv-monitor")
 
         self.log_list_walker = urwid.SimpleListWalker([])
         self.log_list_box = urwid.ListBox(self.log_list_walker)
@@ -46,30 +43,14 @@ class Output(logging.Handler):
         ])
 
         self.layout = urwid.Columns([
-            ("weight", 2, urwid.LineBox(self.illust_list_box, title="new illustrations")),
+            ("weight", 2, urwid.LineBox(self.illust_list_box)),
             ("weight", 1, self.right_pane)
         ])
 
+        self.advanced_initialized = True
+
         self.loop = urwid.MainLoop(self.layout, self.PALETTE)
-        self.loop.set_alarm_in(0.1, self.refresh_loop)
-
         self.loop.run()
-
-    def refresh_loop(self, loop, _):
-        while not self.illust_queue.empty():
-            text = self.illust_queue.get()
-            self.illust_list_walker.append(urwid.Text(text))
-            self.illust_list_box.set_focus(len(self.illust_list_walker) - 1)
-
-        while not self.log_queue.empty():
-            log_text = self.log_queue.get()
-            self.log_list_walker.append(urwid.Text(log_text))
-            self.log_list_box.set_focus(len(self.log_list_walker) - 1)
-
-        while not self.status_queue.empty():
-            self.status_text.set_text(self.status_queue.get())
-
-        self.loop.set_alarm_in(0.1, self.refresh_loop)
 
     def print_illust_basic(self, illust, unescape_caption, multiline_caption, newline):
         caption_string = f"Caption: \033[0;36m{newline}{multiline_caption}\033[0m\n" if len(illust.caption.strip()) != 0 else ""
@@ -121,7 +102,9 @@ class Output(logging.Handler):
                     lines.append(", ")
             lines.append("\n\n")
 
-            self.illust_queue.put(lines)
+            self.illust_list_walker.append(urwid.Text(lines))
+            self.illust_list_box.set_focus(len(self.illust_list_walker) - 1)
+            self.loop.draw_screen()
         except Exception as exc:
             logging.getLogger().error(f"Error when printing illustration: %s", exc)
 
@@ -140,18 +123,21 @@ class Output(logging.Handler):
             return # Status window is not available with basic output
 
         self.monitor_status[monitor_index] = (left, total)
-        lines = ["pixiv-monitor\n"]
+        lines = []
         for index, (l, t) in self.monitor_status.items():
             lines.append(f"Monitor #{index + 1}: ")
             lines.append(('blue', f"{l}/{t} pending\n"))
-        self.status_queue.put(lines)
+        self.status_text.set_text(lines)
+        self.loop.draw_screen()
 
     def emit(self, record):
-        if self.basic:
-            return # Outputting to file already covered by logger's file handler
+        if self.basic or not self.advanced_initialized:
+            return # Outputting to file already covered by logger's file handler. Also we can't log to advanced UI if it's not initialized.
 
         try:
             message = self.format(record)
-            self.log_queue.put(message)
+            self.log_list_walker.append(urwid.Text(message))
+            self.log_list_box.set_focus(len(self.log_list_walker) - 1)
+            self.loop.draw_screen()
         except Exception:
             self.handleError(record)
