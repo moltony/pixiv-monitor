@@ -104,13 +104,13 @@ def main():
                 monitor.run(index)
         else:
             Monitor(check_interval, config["artist_ids"], config, api, seen, token_switcher, hooks, output, config.get("num_threads", 3), 0).run()
+
+        output.initialize() # do this at the end because it takes over if using advanced ui
         
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         print("Stopping.")
-    finally:
-        output.deinitialize()
 
 if __name__ == "__main__":
     main()
