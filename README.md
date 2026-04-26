@@ -111,7 +111,7 @@ pip install winotify
 
 * `--list-artists` List currently configured artists.
 * `--debug-log` Output debugging logs into the console.
-* `--basic` Enable basic output. Use this if you can't or don't want to use the cool three-window curses-based UI.
+* `--basic` Enable basic output. Use this if you can't or don't want to use the cool three-window urwid-based UI.
 
 ## RSS
 
