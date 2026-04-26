@@ -105,7 +105,7 @@ def main():
             for index, monitor in enumerate(monitors):
                 monitor.run(index)
         else:
-            Monitor(check_interval, config["artist_ids"], config, api, seen, token_switcher, hooks, output, config.get("num_threads", 3), 0).run()
+            Monitor(check_interval, config["artist_ids"], config, api, seen, token_switcher, hooks, output, config.get("num_threads", 3)).run(0)
 
         output.run_loop()
         
