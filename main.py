@@ -14,7 +14,6 @@ import sys
 import queue
 import random
 import pathlib
-import curses
 
 # pixiv
 from pixivpy3 import *
@@ -38,14 +37,22 @@ from loginit import init_logging, string_to_log_level
 from output import Output
 
 def list_artists(config, api, token_switcher):
-    artist_ids = config["artist_ids"]
+    artist_ids = []
+    if "artist_ids" in config:
+        artist_ids = config["artist_ids"]
+    else:
+        for monitor in config["monitors"]:
+            artist_ids += monitor["artist_ids"]
     print(f"Will list {len(artist_ids)} artists.")
     for artist_id in artist_ids:
         user_json = utility.api_wrapper(api, token_switcher, api.user_detail, artist_id)
-        user_id = user_json["user"]["id"]
-        user_name = user_json["user"]["name"]
-        user_account = user_json["user"]["account"]
-        print(f"{user_name} | ID: {user_id} | @{user_account}")
+        if "user" in user_json:
+            user_id = user_json["user"]["id"]
+            user_name = user_json["user"]["name"]
+            user_account = user_json["user"]["account"]
+            print(f"{user_name} | ID: {user_id} | @{user_account}")
+        else:
+            print(f"ID {artist_id} does not exist")
 
 def load_hooks(config):
     if "hooks" not in config:
