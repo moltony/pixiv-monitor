@@ -116,3 +116,13 @@ pip install winotify
 ## RSS
 
 To add RSS, simply run `rssmain.py` alongside `main.py`. It will automatically create the RSS file (`pixiv.atom`), which can then either be accessed locally or served using an HTTP server.
+
+## Recovery
+
+### Recover `seen.json` file from illustration log
+
+Run `fix_seen.py` to try recovery of `seen.json` file using an existing `illustlog.json`.
+
+### Recover artist ID list from illustration log
+
+Run `recover_artistids.py` to try recovery of the artist ID list using an existing `illustlog.json`. This will require a `PHPSESSID` cookie value passed as a command-line argument.
